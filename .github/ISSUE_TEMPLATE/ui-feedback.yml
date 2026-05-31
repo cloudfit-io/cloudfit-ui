@@ -1,0 +1,47 @@
+name: UI feedback or bug
+description: Something is broken, confusing, or missing in the cloudfit demo UI.
+title: "[UI] "
+labels: ["ui", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for trying cloudfit. The demo UI is intentionally minimal — feedback on what felt confusing, what was missing, or what broke is what shapes v0.2.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of feedback is this?
+      options:
+        - Bug (something broke)
+        - Confusing (the UI did not behave as I expected)
+        - Missing feature (I wanted to do X and could not)
+        - Wrong recommendation (the top pick did not match my intuition)
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What did you do, and what happened?
+      description: A short reproduction is ideal. If you have a screenshot, drag it in.
+      placeholder: "Set vCPU=64, RAM=256, optimize_for=cost. Expected … Got …"
+    validations:
+      required: true
+
+  - type: textarea
+    id: workload
+    attributes:
+      label: What workload were you sizing for?
+      description: Optional context. Helps us understand whether the scoring weights are off for a real use case.
+      placeholder: "e.g. RNA-seq alignment, Spark ETL, batch LLM inference"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Anything else?
+      description: Browser, deploy target, related tools, anything else.
+    validations:
+      required: false
