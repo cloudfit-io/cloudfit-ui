@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Initial Gradio demo UI over `cloudfit-core` 0.2.0.
-- Workload profile form: vCPU, RAM, archetype, optimize-for, region, GPU.
+- Workload profile form: vCPU, RAM, archetype, optimize-for, multi-region, GPU.
 - Five built-in example workloads (BWA-MEM2, Cell Ranger, AlphaFold, Nextflow burst, Spark ETL).
 - Ranked output: top pick summary + DataFrame of the top-N candidates with hourly and monthly cost.
 - Bundled GCP machine-type snapshot (875 entries across five regions).
