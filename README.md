@@ -38,15 +38,15 @@ python app.py
 
 ## About the snapshot
 
-`data/gcp_snapshot.json` is a representative sample of GCP Compute Engine across `us-central1`, `us-east1`, `us-west1`, `europe-west4`, and `asia-southeast1`. 875 entries total. Prices are adjusted with approximate per-region multipliers. Not live pricing — regenerate with [cloudfit-provider-gcp](https://github.com/cloudfit-io/cloudfit-provider-gcp) if you need fresher numbers.
+`data/gcp_snapshot.json` is a representative sample of GCP Compute Engine across `us-central1`, `us-east1`, `us-west1`, `europe-west4`, and `asia-southeast1`. 875 entries total. Prices are adjusted with approximate per-region multipliers. Not live pricing: regenerate with [cloudfit-provider-gcp](https://github.com/cloudfit-io/cloudfit-provider-gcp) if you need fresher numbers.
 
 ## Ecosystem
 
-- [`cloudfit-core`](https://github.com/cloudfit-io/cloudfit-core) — scoring engine
-- [`cloudfit-api`](https://github.com/cloudfit-io/cloudfit-api) — HTTP API
-- [`cloudfit-provider-gcp`](https://github.com/cloudfit-io/cloudfit-provider-gcp) — GCP machine-type fetcher
-- [`cloudfit-provider-aws`](https://github.com/cloudfit-io/cloudfit-provider-aws) — AWS provider (planning phase)
+- [`cloudfit-core`](https://github.com/cloudfit-io/cloudfit-core): scoring engine
+- [`cloudfit-api`](https://github.com/cloudfit-io/cloudfit-api): HTTP API
+- [`cloudfit-provider-gcp`](https://github.com/cloudfit-io/cloudfit-provider-gcp): GCP machine-type fetcher
+- [`cloudfit-provider-aws`](https://github.com/cloudfit-io/cloudfit-provider-aws): AWS provider (planning phase)
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE).
+Apache 2.0: see [LICENSE](LICENSE).
