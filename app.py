@@ -30,6 +30,7 @@ SNAPSHOT_DATE = "2026-05-28"  # bump when data/gcp_snapshot.json is refreshed
 HOURS_PER_MONTH = 730  # AWS / GCP convention
 
 ARCHETYPE_HINT = (
+    "Classification label only; it does not change the ranking in this release. "
     "io: disk-saturating · cpu: thread-parallel · "
     "mem: large RAM · gpu: GPU inference · burst: scatter-gather"
 )
@@ -119,9 +120,10 @@ def recommend(
         f"**Composite score `{top.score:.3f}` / 1.000** · "
         f"cost `{top.cost_score:.2f}` · perf `{top.perf_score:.2f}` · "
         f"avail `{top.avail_score:.2f}`\n\n"
-        f"<sub>Higher is better. `cost` favors lower price/hr · `perf` favors "
-        f"headroom on requested vCPU and RAM · `avail` favors active "
-        f"(non-deprecated) machine types.</sub>"
+        f"<sub>Higher is better. `cost` is relative to the candidates (cheapest "
+        f"qualifying = 1.0, dearest = 0.0) · `perf` favors a close fit to "
+        f"requested vCPU and RAM (exact through 1.5x scores highest, then "
+        f"decays) · `avail` favors active (non-deprecated) machine types.</sub>"
     )
 
     rows = [
