@@ -60,12 +60,23 @@ EXAMPLES: dict[str, dict] = {
 }
 DEFAULT_EXAMPLE = "BWA-MEM2 alignment (I/O bound)"
 
+# Headroom presets shown to users as multipliers; core stores the fraction (x - 1).
+HEADROOM_CHOICES = [
+    ("None (1.0x)", 0.0),
+    ("1.1x", 0.1),
+    ("1.25x", 0.25),
+    ("1.5x", 0.5),
+    ("2.0x", 1.0),
+]
+
 
 def recommend(
     vcpu: int,
     ram_gb: float,
     archetype: str,
     optimize_for: str,
+    headroom: float,
+    headroom_mode: str,
     regions: list[str],
     gpu_required: bool,
     gpu_vram: int,
@@ -85,6 +96,8 @@ def recommend(
             ram_gb=float(ram_gb),
             archetype=Archetype(archetype),
             optimize_for=OptimizeFor(optimize_for),
+            headroom=float(headroom),
+            headroom_mode=headroom_mode,
             gpu=GPUSpec(
                 required=bool(gpu_required),
                 vram_gb=int(gpu_vram) if gpu_required and gpu_vram else None,
@@ -153,12 +166,13 @@ def apply_example(name: str):
     gpu_required_v = ex.get("gpu_required", False)
     gpu_vram_v = ex.get("gpu_vram", 0)
     tool_v = ex.get("tool", "")
+    # Examples reset headroom to none so the displayed result matches the form.
     summary, rows = recommend(
-        vcpu_v, ram_gb_v, archetype_v, optimize_for_v, [],
+        vcpu_v, ram_gb_v, archetype_v, optimize_for_v, 0.0, "hard", [],
         gpu_required_v, gpu_vram_v, "", tool_v, 5,
     )
     return (
-        vcpu_v, ram_gb_v, archetype_v, optimize_for_v,
+        vcpu_v, ram_gb_v, archetype_v, optimize_for_v, 0.0, "hard",
         gpu_required_v, gpu_vram_v, tool_v,
         summary, rows,
     )
@@ -168,7 +182,7 @@ def apply_example(name: str):
 _default = EXAMPLES[DEFAULT_EXAMPLE]
 INITIAL_SUMMARY, INITIAL_ROWS = recommend(
     _default["vcpu"], _default["ram_gb"], _default["archetype"],
-    _default["optimize_for"], [], False, 0, "",
+    _default["optimize_for"], 0.0, "hard", [], False, 0, "",
     _default.get("tool", ""), 5,
 )
 
@@ -210,6 +224,18 @@ with gr.Blocks(title="cloudfit demo", theme=gr.themes.Soft()) as demo:
                 value=_default["optimize_for"],
                 label="Optimize for",
             )
+            headroom = gr.Dropdown(
+                choices=HEADROOM_CHOICES,
+                value=0.0,
+                label="Headroom",
+                info="Spare capacity above your vCPU/RAM. 1.25x asks for 25% more.",
+            )
+            headroom_mode = gr.Radio(
+                choices=["hard", "soft"],
+                value="hard",
+                label="Headroom mode",
+                info="hard: require the buffer (smaller instances disqualified) · soft: only prefer it",
+            )
             region = gr.Dropdown(
                 choices=REGIONS,
                 value=[],
@@ -242,7 +268,7 @@ with gr.Blocks(title="cloudfit demo", theme=gr.themes.Soft()) as demo:
                 label="Ranked recommendations",
             )
 
-    inputs = [vcpu, ram_gb, archetype, optimize_for, region,
+    inputs = [vcpu, ram_gb, archetype, optimize_for, headroom, headroom_mode, region,
               gpu_required, gpu_vram, workload, tool, top_k]
 
     submit.click(recommend, inputs=inputs, outputs=[summary_md, table])
@@ -251,7 +277,7 @@ with gr.Blocks(title="cloudfit demo", theme=gr.themes.Soft()) as demo:
     example_picker.change(
         apply_example,
         inputs=[example_picker],
-        outputs=[vcpu, ram_gb, archetype, optimize_for,
+        outputs=[vcpu, ram_gb, archetype, optimize_for, headroom, headroom_mode,
                  gpu_required, gpu_vram, tool, summary_md, table],
     )
 
