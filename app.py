@@ -30,9 +30,9 @@ SNAPSHOT_DATE = "2026-05-28"  # bump when data/gcp_snapshot.json is refreshed
 HOURS_PER_MONTH = 730  # AWS / GCP convention
 
 ARCHETYPE_HINT = (
-    "Classification label only; it does not change the ranking in this release. "
-    "io: disk-saturating · cpu: thread-parallel · "
-    "mem: large RAM · gpu: GPU inference · burst: scatter-gather"
+    "Sets the per-component performance weighting, so it shapes the ranking. "
+    "io: weights local SSD · cpu: weights vCPU · "
+    "mem: weights RAM · gpu: weights GPU VRAM · burst: vCPU/RAM balanced"
 )
 
 EXAMPLES: dict[str, dict] = {
