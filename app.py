@@ -135,7 +135,7 @@ def recommend(
         f"avail `{top.avail_score:.2f}`\n\n"
         f"<sub>Higher is better. `cost` is relative to the candidates (cheapest "
         f"qualifying = 1.0, dearest = 0.0) · `perf` favors a close fit to "
-        f"requested vCPU and RAM (exact through 1.5x scores highest, then "
+        f"requested vCPU and RAM (an exact fit scores highest, oversize "
         f"decays) · `avail` favors active (non-deprecated) machine types.</sub>"
     )
 
