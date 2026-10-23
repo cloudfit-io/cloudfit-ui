@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_No unreleased changes._
+
+## [0.2.1] - 2026-10-23
+
 ### Added
 - Smoke tests (`tests/test_app.py`) and a CI workflow running ruff, `mypy --strict`, and pytest on every pull request and push to main.
 
@@ -37,5 +41,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bundled GCP machine-type snapshot (875 entries across five regions).
 - Hugging Face Space deployment metadata in README frontmatter.
 
+[0.2.1]: https://github.com/cloudfit-io/cloudfit-ui/releases/tag/v0.2.1
 [0.2.0]: https://github.com/cloudfit-io/cloudfit-ui/releases/tag/v0.2.0
 [0.1.0]: https://github.com/cloudfit-io/cloudfit-ui/releases/tag/v0.1.0
