@@ -9,14 +9,17 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import gradio as gr
 
 from cloudfit import (
     Archetype,
     GPUSpec,
+    HeadroomMode,
     MachineType,
     OptimizeFor,
+    PricingMode,
     WorkloadProfile,
     rank,
 )
@@ -26,16 +29,33 @@ CANDIDATES: list[MachineType] = [
     MachineType(**row) for row in json.loads(SNAPSHOT_PATH.read_text())
 ]
 REGIONS = sorted({c.region for c in CANDIDATES})
-SNAPSHOT_DATE = "2026-05-28"  # bump when data/gcp_snapshot.json is refreshed
+SNAPSHOT_DATE = "2026-06-23"  # bump when data/gcp_snapshot.json is refreshed
 HOURS_PER_MONTH = 730  # AWS / GCP convention
 
 ARCHETYPE_HINT = (
     "Sets the per-component performance weighting, so it shapes the ranking. "
     "io: weights local SSD · cpu: weights vCPU · "
-    "mem: weights RAM · gpu: weights GPU VRAM · burst: vCPU/RAM balanced"
+    "mem: weights RAM · gpu: weights GPU throughput · burst: vCPU/RAM balanced"
 )
 
-EXAMPLES: dict[str, dict] = {
+# Pricing mode shown to users; "auto" maps to None so core applies the
+# archetype-aware default (spot for burst, on-demand otherwise).
+PRICING_MODE_CHOICES = ["auto", "on_demand", "spot", "cud_1yr"]
+
+
+def _price_hr(instance: MachineType, mode: PricingMode) -> tuple[float, PricingMode]:
+    """(price/hr, mode actually priced) for the scored mode.
+
+    Mirrors core: spot/committed-use fall back to on-demand when the instance
+    has no positive price for that mode.
+    """
+    if mode == PricingMode.spot and instance.spot_price_hr and instance.spot_price_hr > 0:
+        return instance.spot_price_hr, mode
+    if mode == PricingMode.cud_1yr and instance.cud_1yr_price_hr and instance.cud_1yr_price_hr > 0:
+        return instance.cud_1yr_price_hr, mode
+    return instance.price_hr, PricingMode.on_demand
+
+EXAMPLES: dict[str, dict[str, Any]] = {
     "BWA-MEM2 alignment (I/O bound)": {
         "vcpu": 32, "ram_gb": 64, "archetype": "io",
         "optimize_for": "balanced", "tool": "bwa-mem2",
@@ -83,12 +103,14 @@ def recommend(
     workload: str,
     tool: str,
     top_k: int,
-):
+    pricing_mode: str,
+) -> tuple[str, list[list[Any]]]:
     """Rank the snapshot for the given profile, return (summary md, table rows).
 
     `regions` is a list of selected regions. Empty list means "all regions".
     Multi-region filtering happens here on the candidate set; the core engine's
-    `region` hard floor only supports a single region.
+    `region` hard floor only supports a single region. `pricing_mode` of "auto"
+    maps to None so core applies the archetype-aware default.
     """
     try:
         profile = WorkloadProfile(
@@ -97,7 +119,8 @@ def recommend(
             archetype=Archetype(archetype),
             optimize_for=OptimizeFor(optimize_for),
             headroom=float(headroom),
-            headroom_mode=headroom_mode,
+            headroom_mode=HeadroomMode(headroom_mode),
+            pricing_mode=None if pricing_mode == "auto" else PricingMode(pricing_mode),
             gpu=GPUSpec(
                 required=bool(gpu_required),
                 vram_gb=int(gpu_vram) if gpu_required and gpu_vram else None,
@@ -123,18 +146,22 @@ def recommend(
             [],
         )
 
+    mode = profile.effective_pricing_mode
     top = qualified[0]
+    top_price, top_mode = _price_hr(top.instance, mode)
     summary = (
         f"### Top pick: `{top.instance.id}`\n\n"
         f"**{top.instance.vcpu} vCPU · {top.instance.ram_gb:g} GB RAM · "
         f"{top.instance.provider.upper()} · {top.instance.region}**\n\n"
-        f"**${top.instance.price_hr:.3f}/hr** "
-        f"(~${top.instance.price_hr * HOURS_PER_MONTH:,.0f}/month at 24/7)\n\n"
+        f"**${top_price:.3f}/hr** {top_mode.value} "
+        f"(~${top_price * HOURS_PER_MONTH:,.0f}/month at 24/7)\n\n"
         f"**Composite score `{top.score:.3f}` / 1.000** · "
         f"cost `{top.cost_score:.2f}` · perf `{top.perf_score:.2f}` · "
         f"avail `{top.avail_score:.2f}`\n\n"
-        f"<sub>Higher is better. `cost` is relative to the candidates (cheapest "
-        f"qualifying = 1.0, dearest = 0.0) · `perf` favors a close fit to "
+        f"**Why:** {top.reason}\n\n"
+        f"<sub>Higher is better. `cost` is price per unit of work (price in the "
+        f"pricing mode ÷ the family's speed factor), relative to the candidates "
+        f"(cheapest qualifying = 1.0, dearest = 0.0) · `perf` favors a close fit to "
         f"requested vCPU and RAM (an exact fit scores highest, oversize "
         f"decays) · `avail` favors active (non-deprecated) machine types.</sub>"
     )
@@ -146,9 +173,10 @@ def recommend(
             s.instance.region,
             s.instance.vcpu,
             f"{s.instance.ram_gb:g}",
-            f"${s.instance.price_hr:.3f}",
-            f"${s.instance.price_hr * HOURS_PER_MONTH:,.0f}",
+            f"${_price_hr(s.instance, mode)[0]:.3f}",
+            f"${_price_hr(s.instance, mode)[0] * HOURS_PER_MONTH:,.0f}",
             f"{s.score:.3f}",
+            s.reason,
         ]
         for s in qualified
     ]
@@ -156,7 +184,7 @@ def recommend(
     return summary, rows
 
 
-def apply_example(name: str):
+def apply_example(name: str) -> tuple[Any, ...]:
     """Populate the form from an example AND run the recommendation."""
     ex = EXAMPLES.get(name) or EXAMPLES[DEFAULT_EXAMPLE]
     vcpu_v = ex.get("vcpu", 16)
@@ -169,7 +197,7 @@ def apply_example(name: str):
     # Examples reset headroom to none so the displayed result matches the form.
     summary, rows = recommend(
         vcpu_v, ram_gb_v, archetype_v, optimize_for_v, 0.0, "hard", [],
-        gpu_required_v, gpu_vram_v, "", tool_v, 5,
+        gpu_required_v, gpu_vram_v, "", tool_v, 5, "auto",
     )
     return (
         vcpu_v, ram_gb_v, archetype_v, optimize_for_v, 0.0, "hard",
@@ -183,7 +211,7 @@ _default = EXAMPLES[DEFAULT_EXAMPLE]
 INITIAL_SUMMARY, INITIAL_ROWS = recommend(
     _default["vcpu"], _default["ram_gb"], _default["archetype"],
     _default["optimize_for"], 0.0, "hard", [], False, 0, "",
-    _default.get("tool", ""), 5,
+    _default.get("tool", ""), 5, "auto",
 )
 
 
@@ -224,6 +252,14 @@ with gr.Blocks(title="cloudfit demo", theme=gr.themes.Soft()) as demo:
                 value=_default["optimize_for"],
                 label="Optimize for",
             )
+            pricing_mode = gr.Dropdown(
+                choices=PRICING_MODE_CHOICES,
+                value="auto",
+                label="Pricing mode",
+                info="auto: spot for burst, on-demand otherwise · spot/cud_1yr use those "
+                     "prices when a candidate has them (CPU/RAM instances in the bundled "
+                     "snapshot do; GPU instances fall back to on-demand)",
+            )
             headroom = gr.Dropdown(
                 choices=HEADROOM_CHOICES,
                 value=0.0,
@@ -262,14 +298,14 @@ with gr.Blocks(title="cloudfit demo", theme=gr.themes.Soft()) as demo:
             table = gr.Dataframe(
                 value=INITIAL_ROWS,
                 headers=["instance", "provider", "region", "vCPU", "RAM (GB)",
-                         "price/hr", "~ $/mo (24/7)", "score"],
+                         "price/hr", "~ $/mo (24/7)", "score", "why"],
                 interactive=False,
                 wrap=True,
                 label="Ranked recommendations",
             )
 
     inputs = [vcpu, ram_gb, archetype, optimize_for, headroom, headroom_mode, region,
-              gpu_required, gpu_vram, workload, tool, top_k]
+              gpu_required, gpu_vram, workload, tool, top_k, pricing_mode]
 
     submit.click(recommend, inputs=inputs, outputs=[summary_md, table])
     clear.add([summary_md, table])

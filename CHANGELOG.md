@@ -5,15 +5,22 @@ All notable changes to `cloudfit-ui` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-06-02
+## [Unreleased]
+
+_No unreleased changes._
+
+## [0.2.0] - 2026-10-22
 
 ### Added
+- Scoring-depth surfacing (requires cloudfit-core 0.8.0): a "Pricing mode" dropdown (`auto` / `on_demand` / `spot` / `cud_1yr`, where `auto` lets the archetype pick), a "why" column and a "Why" line in the summary showing each pick's `reason`. The bundled snapshot is enriched with `perf_factor` (all instances), `gpu_type` (all GPU instances), and real `spot_price_hr` / `cud_1yr_price_hr` plus refreshed on-demand prices from a live `cloudfit-provider-gcp` fetch (CPU/RAM instances; GPU instances keep their full on-demand price and have no spot/CUD). The demo scores effective capacity, GPU throughput, and spot/committed-use pricing.
 - Headroom controls (requires cloudfit-core 0.5.0): a "Headroom" dropdown offering multiplier presets (1.0x to 2.0x) and a "Headroom mode" selector (hard / soft). The multiplier is converted to the fraction the engine expects (1.25x -> 0.25). Clicking an example resets headroom to none so the form and result stay in sync.
 
 ### Changed
-- Require `cloudfit-core>=0.5.0`.
+- Require `cloudfit-core>=0.8.0`.
 
 ### Fixed
+- `app.py` now passes `mypy --strict` (return-type annotations, `HeadroomMode` coercion); added `pyproject.toml` with a gradio-scoped mypy override.
+- Displayed price/hr and $/mo now use the pricing mode the ranking was scored with (spot or committed-use when the instance has that price, else on-demand), instead of always showing on-demand. The cost explainer notes cost is per unit of work, and `SNAPSHOT_DATE` matches the refreshed snapshot.
 - Corrected perf/cost explanation text for cloudfit-core 0.4.0; archetype hint now notes it does not affect ranking.
 
 ## [0.1.0] - 2026-05-31
@@ -26,4 +33,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bundled GCP machine-type snapshot (875 entries across five regions).
 - Hugging Face Space deployment metadata in README frontmatter.
 
+[0.2.0]: https://github.com/cloudfit-io/cloudfit-ui/releases/tag/v0.2.0
 [0.1.0]: https://github.com/cloudfit-io/cloudfit-ui/releases/tag/v0.1.0

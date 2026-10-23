@@ -1,0 +1,8 @@
+[tool.mypy]
+strict = true
+
+# gradio ships no type stubs; scope the suppression to it so first-party
+# imports are still type-checked.
+[[tool.mypy.overrides]]
+module = "gradio.*"
+ignore_missing_imports = true
