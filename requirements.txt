@@ -1,2 +1,2 @@
 gradio>=5.0,<7.0
-cloudfit-core>=0.8.0
+cloudfit-core>=0.8.2
