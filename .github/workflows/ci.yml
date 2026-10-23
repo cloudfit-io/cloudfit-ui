@@ -1,0 +1,34 @@
+name: CI
+
+# Lint, type-check, and smoke-test every pull request (including the weekly
+# snapshot-refresh PRs) and every push to main.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest mypy "ruff>=0.15,<0.16"
+
+      - name: Lint with ruff
+        run: ruff check app.py tests/
+
+      - name: Type check with mypy
+        run: mypy --strict app.py
+
+      - name: Run tests
+        run: pytest -v --tb=short
