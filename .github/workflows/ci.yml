@@ -14,15 +14,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
+      # Test against the Gradio version the Hugging Face Space runs
+      # (sdk_version in the README front matter), not just the newest one.
       - name: Install dependencies
-        run: pip install -r requirements.txt pytest mypy "ruff>=0.15,<0.16"
+        run: |
+          sdk=$(sed -n 's/^sdk_version: *//p' README.md)
+          pip install -r requirements.txt "gradio==$sdk" pytest mypy "ruff>=0.15,<0.16"
 
       - name: Lint with ruff
         run: ruff check app.py tests/
