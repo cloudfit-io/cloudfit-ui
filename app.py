@@ -29,7 +29,7 @@ CANDIDATES: list[MachineType] = [
     MachineType(**row) for row in json.loads(SNAPSHOT_PATH.read_text())
 ]
 REGIONS = sorted({c.region for c in CANDIDATES})
-SNAPSHOT_DATE = "2026-06-23"  # bump when data/gcp_snapshot.json is refreshed
+SNAPSHOT_DATE = "2026-10-23"  # updated by provider-gcp's refresh-snapshot workflow
 HOURS_PER_MONTH = 730  # AWS / GCP convention
 
 ARCHETYPE_HINT = (
@@ -321,10 +321,12 @@ with gr.Blocks(title="cloudfit demo", theme=gr.themes.Soft()) as demo:
         f"""
         ---
         **About the snapshot.** Representative sample of GCP Compute Engine across
-        `us-central1`, `us-east1`, `us-west1`, `europe-west4`, `asia-southeast1`
-        (snapshot generated {SNAPSHOT_DATE}). Not live pricing — use
+        `us-central1`, `us-east1`, `us-west1`, `europe-west4`, `asia-southeast1`.
+        On-demand, spot, and 1-year committed-use prices are refreshed weekly from
+        the GCP billing catalog (last refresh {SNAPSHOT_DATE}); GPU prices are
+        approximate. Use
         [cloudfit-provider-gcp](https://github.com/cloudfit-io/cloudfit-provider-gcp)
-        to regenerate from your own GCP project.
+        to fetch live data from your own GCP project.
 
         **Source code.** [cloudfit-ui](https://github.com/cloudfit-io/cloudfit-ui) ·
         [cloudfit-core](https://github.com/cloudfit-io/cloudfit-core) ·

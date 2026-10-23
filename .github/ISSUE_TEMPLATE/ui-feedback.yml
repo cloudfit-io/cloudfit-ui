@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for trying cloudfit. The demo UI is intentionally minimal — feedback on what felt confusing, what was missing, or what broke is what shapes v0.2.
+        Thanks for trying cloudfit. The demo UI is intentionally minimal: feedback on what felt confusing, what was missing, or what broke shapes the next release.
 
   - type: dropdown
     id: kind

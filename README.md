@@ -16,7 +16,7 @@ short_description: Pick a workload, get a cloud machine-type recommendation.
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 
-**Gradio demo for [cloudfit-core](https://github.com/cloudfit-io/cloudfit-core).** Pick a workload, get a ranked list of GCP machine types scored on cost, performance, and availability.
+**Gradio demo for [cloudfit-core](https://github.com/cloudfit-io/cloudfit-core).** Pick a workload and a pricing mode, get a ranked list of GCP machine types scored on cost, performance, and availability, with a one-line reason for each pick.
 
 Live demo: **[chaitanyakasaraneni-cloudfit-ui.hf.space](https://chaitanyakasaraneni-cloudfit-ui.hf.space)**
 
@@ -38,7 +38,17 @@ python app.py
 
 ## About the snapshot
 
-`data/gcp_snapshot.json` is a representative sample of GCP Compute Engine across `us-central1`, `us-east1`, `us-west1`, `europe-west4`, and `asia-southeast1`. 875 entries total. Prices are adjusted with approximate per-region multipliers. Not live pricing: regenerate with [cloudfit-provider-gcp](https://github.com/cloudfit-io/cloudfit-provider-gcp) if you need fresher numbers.
+`data/gcp_snapshot.json` is a representative sample of GCP Compute Engine across `us-central1`, `us-east1`, `us-west1`, `europe-west4`, and `asia-southeast1`. 875 entries total, each with a `perf_factor`, and GPU instances with a `gpu_type`. On-demand, spot, and 1-year committed-use prices for CPU/RAM machine types are refreshed weekly from the live GCP billing catalog by [cloudfit-provider-gcp](https://github.com/cloudfit-io/cloudfit-provider-gcp)'s scheduled workflow, which opens a pull request here. GPU instances keep approximate on-demand prices and have no spot or committed-use price.
+
+## Development
+
+```bash
+pip install -r requirements.txt pytest mypy "ruff>=0.15,<0.16"
+pytest                 # smoke tests in tests/
+ruff check app.py tests/ && mypy --strict app.py
+```
+
+CI runs the same checks on every pull request.
 
 ## Ecosystem
 

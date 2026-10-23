@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_No unreleased changes._
+### Added
+- Smoke tests (`tests/test_app.py`) and a CI workflow running ruff, `mypy --strict`, and pytest on every pull request and push to main.
+
+### Changed
+- "About the snapshot" now says prices are refreshed weekly from the GCP billing catalog and shows the last refresh date (kept current by cloudfit-provider-gcp's refresh workflow); GPU prices are noted as approximate.
 
 ## [0.2.0] - 2026-10-22
 
