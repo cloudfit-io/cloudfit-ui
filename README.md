@@ -13,6 +13,8 @@ short_description: Pick a workload, get a cloud machine-type recommendation.
 
 # cloudfit-ui
 
+[![Release](https://img.shields.io/github/v/release/cloudfit-io/cloudfit-ui)](https://github.com/cloudfit-io/cloudfit-ui/releases)
+[![CI](https://github.com/cloudfit-io/cloudfit-ui/actions/workflows/ci.yml/badge.svg)](https://github.com/cloudfit-io/cloudfit-ui/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 
@@ -48,7 +50,7 @@ pytest                 # smoke tests in tests/
 ruff check app.py tests/ && mypy --strict app.py
 ```
 
-CI runs the same checks on every pull request.
+CI runs the same checks on every pull request, against the Gradio version the Space runs (`sdk_version` in this README's front matter, currently 5.49.1). `requirements.txt` allows Gradio 5 or 6, so install `gradio==5.49.1` locally to match the live demo exactly.
 
 ## Ecosystem
 

@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_No unreleased changes._
+### Changed
+- README adds release and CI badges and explains that CI tests the Space's Gradio version (5.49.1).
 
 ## [0.2.2] - 2026-10-23
 
