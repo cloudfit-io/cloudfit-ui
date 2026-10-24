@@ -1,7 +1,7 @@
 """Gradio demo UI for cloudfit.
 
-Loads a bundled GCP machine-type snapshot at startup and scores it against
-the user's workload profile using cloudfit-core in-process. No API calls,
+Loads bundled GCP and AWS machine-type snapshots at startup and scores them
+against the user's workload profile using cloudfit-core in-process. No API calls,
 no provider credentials, no database.
 """
 
@@ -24,12 +24,16 @@ from cloudfit import (
     rank,
 )
 
-SNAPSHOT_PATH = Path(__file__).parent / "data" / "gcp_snapshot.json"
+DATA_DIR = Path(__file__).parent / "data"
 CANDIDATES: list[MachineType] = [
-    MachineType(**row) for row in json.loads(SNAPSHOT_PATH.read_text())
+    MachineType(**row)
+    for name in ("gcp_snapshot.json", "aws_snapshot.json")
+    for row in json.loads((DATA_DIR / name).read_text())
 ]
+PROVIDERS = ["gcp", "aws"]
 REGIONS = sorted({c.region for c in CANDIDATES})
 SNAPSHOT_DATE = "2026-10-23"  # updated by provider-gcp's refresh-snapshot workflow
+AWS_SNAPSHOT_DATE = "2026-10-23"  # updated by provider-aws's refresh-snapshot workflow
 HOURS_PER_MONTH = 730  # AWS / GCP convention
 
 ARCHETYPE_HINT = (
@@ -98,6 +102,7 @@ def recommend(
     headroom: float,
     headroom_mode: str,
     regions: list[str],
+    providers: list[str],
     gpu_required: bool,
     gpu_vram: int,
     workload: str,
@@ -108,6 +113,7 @@ def recommend(
     """Rank the snapshot for the given profile, return (summary md, table rows).
 
     `regions` is a list of selected regions. Empty list means "all regions".
+    `providers` is the list of clouds to consider; empty means both.
     Multi-region filtering happens here on the candidate set; the core engine's
     `region` hard floor only supports a single region. `pricing_mode` of "auto"
     maps to None so core applies the archetype-aware default.
@@ -131,11 +137,21 @@ def recommend(
     except Exception as e:
         return f"**Invalid input:** {e}", []
 
-    candidates = (
-        [c for c in CANDIDATES if c.region in regions] if regions else CANDIDATES
-    )
+    candidates = [
+        c for c in CANDIDATES
+        if (not regions or c.region in regions) and (not providers or c.provider in providers)
+    ]
     ranked = rank(profile, candidates)
-    qualified = [r for r in ranked if not r.disqualified][: int(top_k)]
+    # One row per instance type, in its best-scoring region: AWS prices many types
+    # identically across regions, which would otherwise fill the table with repeats.
+    seen: set[tuple[str, str]] = set()
+    qualified = []
+    for r in ranked:
+        key = (r.instance.provider, r.instance.id)
+        if not r.disqualified and key not in seen:
+            seen.add(key)
+            qualified.append(r)
+    qualified = qualified[: int(top_k)]
 
     if not qualified:
         first_dq = next((r for r in ranked if r.disqualified), None)
@@ -196,7 +212,7 @@ def apply_example(name: str) -> tuple[Any, ...]:
     tool_v = ex.get("tool", "")
     # Examples reset headroom to none so the displayed result matches the form.
     summary, rows = recommend(
-        vcpu_v, ram_gb_v, archetype_v, optimize_for_v, 0.0, "hard", [],
+        vcpu_v, ram_gb_v, archetype_v, optimize_for_v, 0.0, "hard", [], PROVIDERS,
         gpu_required_v, gpu_vram_v, "", tool_v, 5, "auto",
     )
     return (
@@ -210,7 +226,7 @@ def apply_example(name: str) -> tuple[Any, ...]:
 _default = EXAMPLES[DEFAULT_EXAMPLE]
 INITIAL_SUMMARY, INITIAL_ROWS = recommend(
     _default["vcpu"], _default["ram_gb"], _default["archetype"],
-    _default["optimize_for"], 0.0, "hard", [], False, 0, "",
+    _default["optimize_for"], 0.0, "hard", [], PROVIDERS, False, 0, "",
     _default.get("tool", ""), 5, "auto",
 )
 
@@ -222,8 +238,8 @@ with gr.Blocks(title="cloudfit demo", theme=gr.themes.Soft()) as demo:
         ### Pick a workload, get a cloud machine-type recommendation.
 
         Demo UI over [cloudfit-core](https://github.com/cloudfit-io/cloudfit-core).
-        Scores a bundled GCP snapshot (875 instance types across 5 regions) against
-        your workload profile. For programmatic access, see the
+        Scores bundled GCP and AWS snapshots (875 GCP and about 6,000 AWS instance
+        types, 5 regions each) against your workload profile. For programmatic access, see the
         [HTTP API](https://chaitanyakasaraneni-cloudfit-api.hf.space/docs).
         """
     )
@@ -257,8 +273,8 @@ with gr.Blocks(title="cloudfit demo", theme=gr.themes.Soft()) as demo:
                 value="auto",
                 label="Pricing mode",
                 info="auto: spot for burst, on-demand otherwise · spot/cud_1yr use those "
-                     "prices when a candidate has them (CPU/RAM instances in the bundled "
-                     "snapshot do; GPU instances fall back to on-demand)",
+                     "prices when a candidate has them, else on-demand (GCP CPU/RAM types "
+                     "have both; AWS has cud_1yr but no spot; GCP GPUs have neither)",
             )
             headroom = gr.Dropdown(
                 choices=HEADROOM_CHOICES,
@@ -271,6 +287,12 @@ with gr.Blocks(title="cloudfit demo", theme=gr.themes.Soft()) as demo:
                 value="hard",
                 label="Headroom mode",
                 info="hard: require the buffer (smaller instances disqualified) · soft: only prefer it",
+            )
+            providers = gr.CheckboxGroup(
+                choices=PROVIDERS,
+                value=PROVIDERS,
+                label="Clouds",
+                info="Untick one to compare within a single cloud",
             )
             region = gr.Dropdown(
                 choices=REGIONS,
@@ -301,10 +323,10 @@ with gr.Blocks(title="cloudfit demo", theme=gr.themes.Soft()) as demo:
                          "price/hr", "~ $/mo (24/7)", "score", "why"],
                 interactive=False,
                 wrap=True,
-                label="Ranked recommendations",
+                label="Ranked recommendations (each instance type in its best-scoring region)",
             )
 
-    inputs = [vcpu, ram_gb, archetype, optimize_for, headroom, headroom_mode, region,
+    inputs = [vcpu, ram_gb, archetype, optimize_for, headroom, headroom_mode, region, providers,
               gpu_required, gpu_vram, workload, tool, top_k, pricing_mode]
 
     submit.click(recommend, inputs=inputs, outputs=[summary_md, table])
@@ -320,13 +342,16 @@ with gr.Blocks(title="cloudfit demo", theme=gr.themes.Soft()) as demo:
     gr.Markdown(
         f"""
         ---
-        **About the snapshot.** Representative sample of GCP Compute Engine across
-        `us-central1`, `us-east1`, `us-west1`, `europe-west4`, `asia-southeast1`.
-        On-demand, spot, and 1-year committed-use prices are refreshed weekly from
-        the GCP billing catalog (last refresh {SNAPSHOT_DATE}); GPU prices are
-        approximate. Use
+        **About the snapshots.** *GCP:* a representative sample of Compute Engine
+        across `us-central1`, `us-east1`, `us-west1`, `europe-west4`,
+        `asia-southeast1`; on-demand, spot, and 1-year committed-use prices are
+        refreshed weekly from the GCP billing catalog (last refresh {SNAPSHOT_DATE});
+        GPU prices are approximate. *AWS:* every Linux EC2 type in `us-east-1`,
+        `us-east-2`, `us-west-2`, `eu-west-1`, `ap-southeast-1`, with on-demand and
+        1-year reserved prices from AWS's public price list, rebuilt weekly (last
+        refresh {AWS_SNAPSHOT_DATE}); no spot prices. Fetch live data yourself with
         [cloudfit-provider-gcp](https://github.com/cloudfit-io/cloudfit-provider-gcp)
-        to fetch live data from your own GCP project.
+        or [cloudfit-provider-aws](https://github.com/cloudfit-io/cloudfit-provider-aws).
 
         **Source code.** [cloudfit-ui](https://github.com/cloudfit-io/cloudfit-ui) ·
         [cloudfit-core](https://github.com/cloudfit-io/cloudfit-core) ·

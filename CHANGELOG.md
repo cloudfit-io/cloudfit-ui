@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [0.3.0] - 2026-10-23
+
+### Added
+- **AWS.** The demo loads a bundled `data/aws_snapshot.json` (every Linux EC2 type in five regions, from cloudfit-provider-aws) alongside the GCP snapshot and ranks both clouds side by side. A Clouds checkbox limits it to one, and the About section covers both snapshots and their refresh dates (`AWS_SNAPSHOT_DATE` is kept current by cloudfit-provider-aws's refresh workflow).
+
+### Changed
+- Each instance type appears once in the results, in its best-scoring region. AWS prices many types identically across regions, which filled the table with repeats.
+- Require `cloudfit-core>=0.10.1`, which names AWS families correctly in each pick's reason.
+
 ## [0.2.4] - 2026-10-23
 
 ### Changed
@@ -57,6 +66,7 @@ _No unreleased changes._
 - Bundled GCP machine-type snapshot (875 entries across five regions).
 - Hugging Face Space deployment metadata in README frontmatter.
 
+[0.3.0]: https://github.com/cloudfit-io/cloudfit-ui/releases/tag/v0.3.0
 [0.2.4]: https://github.com/cloudfit-io/cloudfit-ui/releases/tag/v0.2.4
 [0.2.3]: https://github.com/cloudfit-io/cloudfit-ui/releases/tag/v0.2.3
 [0.2.2]: https://github.com/cloudfit-io/cloudfit-ui/releases/tag/v0.2.2

@@ -8,7 +8,8 @@ import app
 def _recommend(**over: Any) -> tuple[str, list[list[Any]]]:
     args: dict[str, Any] = {
         "vcpu": 16, "ram_gb": 64, "archetype": "burst", "optimize_for": "cost",
-        "headroom": 0.0, "headroom_mode": "hard", "regions": [], "gpu_required": False,
+        "headroom": 0.0, "headroom_mode": "hard", "regions": [], "providers": app.PROVIDERS,
+        "gpu_required": False,
         "gpu_vram": 0, "workload": "", "tool": "", "top_k": 3, "pricing_mode": "auto",
     }
     args.update(over)
@@ -22,6 +23,13 @@ def _instance(row: list[Any]) -> Any:
 def test_snapshot_loads_with_prices() -> None:
     assert app.CANDIDATES
     assert all(c.price_hr > 0 for c in app.CANDIDATES)
+    assert {c.provider for c in app.CANDIDATES} == {"gcp", "aws"}
+
+
+def test_providers_filter_limits_the_clouds() -> None:
+    _, rows = _recommend(providers=["aws"], top_k=10)
+    assert rows
+    assert {r[1] for r in rows} == {"aws"}
 
 
 def test_recommend_returns_ranked_rows() -> None:
@@ -32,8 +40,14 @@ def test_recommend_returns_ranked_rows() -> None:
     assert scores == sorted(scores, reverse=True)
 
 
+def test_each_instance_type_appears_once() -> None:
+    _, rows = _recommend(archetype="cpu", optimize_for="balanced", top_k=10)
+    keys = [(r[1], r[0]) for r in rows]
+    assert len(keys) == len(set(keys))
+
+
 def test_burst_auto_shows_spot_price() -> None:
-    summary, rows = _recommend()
+    summary, rows = _recommend(providers=["gcp"])   # AWS has no spot prices
     inst = _instance(rows[0])
     assert inst.spot_price_hr
     assert rows[0][5] == f"${inst.spot_price_hr:.3f}"

@@ -18,7 +18,7 @@ short_description: Pick a workload, get a cloud machine-type recommendation.
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 
-**Gradio demo for [cloudfit-core](https://github.com/cloudfit-io/cloudfit-core).** Pick a workload and a pricing mode, get a ranked list of GCP machine types scored on cost, performance, and availability, with a one-line reason for each pick.
+**Gradio demo for [cloudfit-core](https://github.com/cloudfit-io/cloudfit-core).** Pick a workload and a pricing mode, get a ranked list of GCP and AWS machine types scored on cost, performance, and availability, with a one-line reason for each pick.
 
 Live demo: **[chaitanyakasaraneni-cloudfit-ui.hf.space](https://chaitanyakasaraneni-cloudfit-ui.hf.space)**
 
@@ -26,7 +26,7 @@ Live demo: **[chaitanyakasaraneni-cloudfit-ui.hf.space](https://chaitanyakasaran
 
 ## What this is
 
-A one-screen UI that runs the cloudfit scoring engine in-process against a bundled GCP machine-type snapshot. No login, no credentials, no provider calls at request time. It exists so you can try cloudfit in 30 seconds before reading any code.
+A one-screen UI that runs the cloudfit scoring engine in-process against bundled GCP and AWS machine-type snapshots. Both clouds are compared side by side, or one at a time with the Clouds checkboxes, and each instance type is listed once, in its best-scoring region. No login, no credentials, no provider calls at request time. It exists so you can try cloudfit in 30 seconds before reading any code.
 
 For programmatic access, use the [HTTP API](https://github.com/cloudfit-io/cloudfit-api) instead.
 
@@ -38,9 +38,11 @@ python app.py
 # open http://127.0.0.1:7860
 ```
 
-## About the snapshot
+## About the snapshots
 
 `data/gcp_snapshot.json` is a representative sample of GCP Compute Engine across `us-central1`, `us-east1`, `us-west1`, `europe-west4`, and `asia-southeast1`. 875 entries total, each with a `perf_factor`, and GPU instances with a `gpu_type`. On-demand, spot, and 1-year committed-use prices for CPU/RAM machine types are refreshed weekly from the live GCP billing catalog by [cloudfit-provider-gcp](https://github.com/cloudfit-io/cloudfit-provider-gcp)'s scheduled workflow, which opens a pull request here. GPU instances keep approximate on-demand prices and have no spot or committed-use price.
+
+`data/aws_snapshot.json` is every Linux EC2 type in `us-east-1`, `us-east-2`, `us-west-2`, `eu-west-1`, and `ap-southeast-1` (about 6,000 entries), with on-demand and 1-year reserved prices, built from AWS's public price list by [cloudfit-provider-aws](https://github.com/cloudfit-io/cloudfit-provider-aws)'s weekly workflow, which opens a pull request here. AWS spot prices are not in the public price list, so in spot mode AWS instances are priced on-demand.
 
 ## Development
 
@@ -57,7 +59,7 @@ CI runs the same checks on every pull request, against the Gradio version the Sp
 - [`cloudfit-core`](https://github.com/cloudfit-io/cloudfit-core): scoring engine
 - [`cloudfit-api`](https://github.com/cloudfit-io/cloudfit-api): HTTP API
 - [`cloudfit-provider-gcp`](https://github.com/cloudfit-io/cloudfit-provider-gcp): GCP machine-type fetcher
-- [`cloudfit-provider-aws`](https://github.com/cloudfit-io/cloudfit-provider-aws): AWS provider (planning phase)
+- [`cloudfit-provider-aws`](https://github.com/cloudfit-io/cloudfit-provider-aws): AWS EC2 fetcher
 
 ## License
 
