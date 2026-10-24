@@ -5,6 +5,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+
+# Least privilege by default; jobs that need more (publish, release) declare it.
+permissions:
+  contents: read
+
 jobs:
   sync:
     runs-on: ubuntu-latest
