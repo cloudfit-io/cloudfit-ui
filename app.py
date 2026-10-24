@@ -161,7 +161,7 @@ def recommend(
         f"**Why:** {top.reason}\n\n"
         f"<sub>Higher is better. `cost` is price per unit of work (price in the "
         f"pricing mode ÷ the family's speed factor), relative to the candidates "
-        f"(cheapest qualifying = 1.0, dearest = 0.0) · `perf` favors a close fit to "
+        f"(cheapest qualifying = 1.0, twice its cost = 0.5) · `perf` favors a close fit to "
         f"requested vCPU and RAM (an exact fit scores highest, oversize "
         f"decays) · `avail` favors active (non-deprecated) machine types.</sub>"
     )
