@@ -9,7 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
-## [0.3.0] - 2026-10-23
+## [0.3.1] - 2026-10-23
+
+### Fixed
+- The Regions picker only offers regions of the ticked clouds and drops a selected region when its cloud is unticked. It offered every region, so GCP plus `us-east-1` (an AWS region; GCP's is `us-east1`) returned nothing.
+- When the cloud and region filters leave nothing to score, the message says so and lists each cloud's regions, instead of "Closest mismatch: no matching instances".
+- The results table no longer truncates its headers or breaks values mid-number: cloud and region share one "where" column, the per-row monthly cost is dropped (the top pick still shows it), columns have fixed widths, and the results panel is wider. On a narrow screen the table scrolls sideways.
+ - 2026-10-23
 
 ### Added
 - **AWS.** The demo loads a bundled `data/aws_snapshot.json` (every Linux EC2 type in five regions, from cloudfit-provider-aws) alongside the GCP snapshot and ranks both clouds side by side. A Clouds checkbox limits it to one, and the About section covers both snapshots and their refresh dates (`AWS_SNAPSHOT_DATE` is kept current by cloudfit-provider-aws's refresh workflow).
@@ -66,6 +72,7 @@ _No unreleased changes._
 - Bundled GCP machine-type snapshot (875 entries across five regions).
 - Hugging Face Space deployment metadata in README frontmatter.
 
+[0.3.1]: https://github.com/cloudfit-io/cloudfit-ui/releases/tag/v0.3.1
 [0.3.0]: https://github.com/cloudfit-io/cloudfit-ui/releases/tag/v0.3.0
 [0.2.4]: https://github.com/cloudfit-io/cloudfit-ui/releases/tag/v0.2.4
 [0.2.3]: https://github.com/cloudfit-io/cloudfit-ui/releases/tag/v0.2.3

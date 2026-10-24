@@ -31,7 +31,21 @@ CANDIDATES: list[MachineType] = [
     for row in json.loads((DATA_DIR / name).read_text())
 ]
 PROVIDERS = ["gcp", "aws"]
-REGIONS = sorted({c.region for c in CANDIDATES})
+REGIONS_BY_PROVIDER = {p: sorted({c.region for c in CANDIDATES if c.provider == p}) for p in PROVIDERS}
+
+
+def regions_for(providers: list[str]) -> list[str]:
+    """Regions offered by the selected clouds (all clouds when none is selected)."""
+    return sorted({r for p in (providers or PROVIDERS) for r in REGIONS_BY_PROVIDER[p]})
+
+
+def update_regions(providers: list[str], selected: list[str]) -> Any:
+    """Limit the region picker to the selected clouds, dropping regions they lack."""
+    choices = regions_for(providers)
+    return gr.Dropdown(
+        choices=choices, value=[r for r in selected or [] if r in choices], multiselect=True
+    )
+
 SNAPSHOT_DATE = "2026-10-23"  # updated by provider-gcp's refresh-snapshot workflow
 AWS_SNAPSHOT_DATE = "2026-10-23"  # updated by provider-aws's refresh-snapshot workflow
 HOURS_PER_MONTH = 730  # AWS / GCP convention
@@ -141,6 +155,18 @@ def recommend(
         c for c in CANDIDATES
         if (not regions or c.region in regions) and (not providers or c.provider in providers)
     ]
+    if not candidates:
+        clouds = providers or PROVIDERS
+        offered = "; ".join(
+            f"{p.upper()}: {', '.join(REGIONS_BY_PROVIDER[p])}" for p in clouds
+        )
+        return (
+            f"**No {' or '.join(p.upper() for p in clouds)} instances in "
+            f"{', '.join(regions)}.** Pick a region the selected cloud offers "
+            f"({offered}), or clear the region filter.",
+            [],
+        )
+
     ranked = rank(profile, candidates)
     # One row per instance type, in its best-scoring region: AWS prices many types
     # identically across regions, which would otherwise fill the table with repeats.
@@ -185,12 +211,10 @@ def recommend(
     rows = [
         [
             s.instance.id,
-            s.instance.provider,
-            s.instance.region,
+            f"{s.instance.provider} · {s.instance.region}",
             s.instance.vcpu,
             f"{s.instance.ram_gb:g}",
             f"${_price_hr(s.instance, mode)[0]:.3f}",
-            f"${_price_hr(s.instance, mode)[0] * HOURS_PER_MONTH:,.0f}",
             f"{s.score:.3f}",
             s.reason,
         ]
@@ -295,7 +319,7 @@ with gr.Blocks(title="cloudfit demo", theme=gr.themes.Soft()) as demo:
                 info="Untick one to compare within a single cloud",
             )
             region = gr.Dropdown(
-                choices=REGIONS,
+                choices=regions_for(PROVIDERS),
                 value=[],
                 label="Regions",
                 multiselect=True,
@@ -315,12 +339,15 @@ with gr.Blocks(title="cloudfit demo", theme=gr.themes.Soft()) as demo:
                 submit = gr.Button("Recommend", variant="primary")
                 clear = gr.ClearButton(value="Clear results")
 
-        with gr.Column(scale=2):
+        with gr.Column(scale=3):
             summary_md = gr.Markdown(value=INITIAL_SUMMARY)
             table = gr.Dataframe(
                 value=INITIAL_ROWS,
-                headers=["instance", "provider", "region", "vCPU", "RAM (GB)",
-                         "price/hr", "~ $/mo (24/7)", "score", "why"],
+                headers=["instance", "where", "vCPU", "RAM GB", "$/hr", "score", "why"],
+                # Fixed widths sized to the content so ids, prices, and scores never
+                # wrap mid-value; on a narrow screen the table scrolls sideways
+                # instead of squeezing "why" to nothing.
+                column_widths=["170px", "170px", "58px", "72px", "78px", "68px", "280px"],
                 interactive=False,
                 wrap=True,
                 label="Ranked recommendations (each instance type in its best-scoring region)",
@@ -330,6 +357,7 @@ with gr.Blocks(title="cloudfit demo", theme=gr.themes.Soft()) as demo:
               gpu_required, gpu_vram, workload, tool, top_k, pricing_mode]
 
     submit.click(recommend, inputs=inputs, outputs=[summary_md, table])
+    providers.change(update_regions, inputs=[providers, region], outputs=[region])
     clear.add([summary_md, table])
 
     example_picker.change(

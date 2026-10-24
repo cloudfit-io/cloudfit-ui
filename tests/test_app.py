@@ -17,7 +17,11 @@ def _recommend(**over: Any) -> tuple[str, list[list[Any]]]:
 
 
 def _instance(row: list[Any]) -> Any:
-    return next(c for c in app.CANDIDATES if c.id == row[0] and c.region == row[2])
+    provider, region = row[1].split(" · ")
+    return next(
+        c for c in app.CANDIDATES
+        if c.id == row[0] and c.provider == provider and c.region == region
+    )
 
 
 def test_snapshot_loads_with_prices() -> None:
@@ -29,41 +33,57 @@ def test_snapshot_loads_with_prices() -> None:
 def test_providers_filter_limits_the_clouds() -> None:
     _, rows = _recommend(providers=["aws"], top_k=10)
     assert rows
-    assert {r[1] for r in rows} == {"aws"}
+    assert {r[1].split(" · ")[0] for r in rows} == {"aws"}
 
 
 def test_recommend_returns_ranked_rows() -> None:
     summary, rows = _recommend()
     assert summary.startswith("### Top pick:")
     assert 0 < len(rows) <= 3
-    scores = [float(r[7]) for r in rows]
+    scores = [float(r[5]) for r in rows]
     assert scores == sorted(scores, reverse=True)
 
 
 def test_each_instance_type_appears_once() -> None:
     _, rows = _recommend(archetype="cpu", optimize_for="balanced", top_k=10)
-    keys = [(r[1], r[0]) for r in rows]
+    keys = [(r[1].split(" · ")[0], r[0]) for r in rows]
     assert len(keys) == len(set(keys))
+
+
+def test_regions_follow_the_selected_clouds() -> None:
+    assert "us-east1" in app.regions_for(["gcp"])
+    assert "us-east-1" not in app.regions_for(["gcp"])
+    assert "us-east-1" in app.regions_for(["aws"])
+    assert app.regions_for([]) == app.regions_for(app.PROVIDERS)
+    picker = app.update_regions(["gcp"], ["us-east-1", "us-east1"])
+    assert picker.value == ["us-east1"]
+
+
+def test_region_from_another_cloud_explains_itself() -> None:
+    summary, rows = _recommend(providers=["gcp"], regions=["us-east-1"])
+    assert rows == []
+    assert "No GCP instances in us-east-1" in summary
+    assert "us-east1" in summary
 
 
 def test_burst_auto_shows_spot_price() -> None:
     summary, rows = _recommend(providers=["gcp"])   # AWS has no spot prices
     inst = _instance(rows[0])
     assert inst.spot_price_hr
-    assert rows[0][5] == f"${inst.spot_price_hr:.3f}"
+    assert rows[0][4] == f"${inst.spot_price_hr:.3f}"
     assert " spot " in summary
 
 
 def test_on_demand_shows_list_price() -> None:
     _, rows = _recommend(pricing_mode="on_demand")
-    assert rows[0][5] == f"${_instance(rows[0]).price_hr:.3f}"
+    assert rows[0][4] == f"${_instance(rows[0]).price_hr:.3f}"
 
 
 def test_gpu_spot_falls_back_to_on_demand() -> None:
     summary, rows = _recommend(vcpu=12, ram_gb=85, archetype="gpu", optimize_for="performance",
                                gpu_required=True, gpu_vram=40, pricing_mode="spot")
     assert rows
-    assert rows[0][5] == f"${_instance(rows[0]).price_hr:.3f}"
+    assert rows[0][4] == f"${_instance(rows[0]).price_hr:.3f}"
     assert " on_demand " in summary
 
 
