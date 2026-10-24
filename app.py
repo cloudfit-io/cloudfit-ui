@@ -15,12 +15,14 @@ import gradio as gr
 
 from cloudfit import (
     Archetype,
+    CpuArch,
     GPUSpec,
     HeadroomMode,
     MachineType,
     OptimizeFor,
     PricingMode,
     WorkloadProfile,
+    cpu_arch_for,
     rank,
 )
 
@@ -56,9 +58,18 @@ ARCHETYPE_HINT = (
     "mem: weights RAM · gpu: weights GPU throughput · burst: vCPU/RAM balanced"
 )
 
+# CPU architecture choices; "any" maps to None (no architecture floor).
+CPU_ARCH_CHOICES = ["any", "x86_64", "arm64"]
+
 # Pricing mode shown to users; "auto" maps to None so core applies the
 # archetype-aware default (spot for burst, on-demand otherwise).
 PRICING_MODE_CHOICES = ["auto", "on_demand", "spot", "cud_1yr"]
+
+
+def _arch_label(instance: MachineType) -> str:
+    """ " · arm64" style suffix for the top pick, or "" when unknown."""
+    arch = instance.cpu_arch or cpu_arch_for(instance.id)
+    return f" · {arch.value}" if arch else ""
 
 
 def _price_hr(instance: MachineType, mode: PricingMode) -> tuple[float, PricingMode]:
@@ -123,6 +134,7 @@ def recommend(
     tool: str,
     top_k: int,
     pricing_mode: str,
+    cpu_arch: str = "any",
 ) -> tuple[str, list[list[Any]]]:
     """Rank the snapshot for the given profile, return (summary md, table rows).
 
@@ -141,6 +153,7 @@ def recommend(
             headroom=float(headroom),
             headroom_mode=HeadroomMode(headroom_mode),
             pricing_mode=None if pricing_mode == "auto" else PricingMode(pricing_mode),
+            cpu_arch=None if cpu_arch == "any" else CpuArch(cpu_arch),
             gpu=GPUSpec(
                 required=bool(gpu_required),
                 vram_gb=int(gpu_vram) if gpu_required and gpu_vram else None,
@@ -194,7 +207,8 @@ def recommend(
     summary = (
         f"### Top pick: `{top.instance.id}`\n\n"
         f"**{top.instance.vcpu} vCPU · {top.instance.ram_gb:g} GB RAM · "
-        f"{top.instance.provider.upper()} · {top.instance.region}**\n\n"
+        f"{top.instance.provider.upper()} · {top.instance.region}"
+        f"{_arch_label(top.instance)}**\n\n"
         f"**${top_price:.3f}/hr** {top_mode.value} "
         f"(~${top_price * HOURS_PER_MONTH:,.0f}/month at 24/7)\n\n"
         f"**Composite score `{top.score:.3f}` / 1.000** · "
@@ -255,7 +269,7 @@ INITIAL_SUMMARY, INITIAL_ROWS = recommend(
 )
 
 
-with gr.Blocks(title="cloudfit demo", theme=gr.themes.Soft()) as demo:
+with gr.Blocks(title="cloudfit demo") as demo:
     gr.Markdown(
         """
         # cloudfit
@@ -326,6 +340,14 @@ with gr.Blocks(title="cloudfit demo", theme=gr.themes.Soft()) as demo:
                 info="Leave empty to consider all regions",
             )
 
+            cpu_arch = gr.Dropdown(
+                choices=CPU_ARCH_CHOICES,
+                value="any",
+                label="CPU architecture",
+                info="Pick x86_64 for tools built for Intel/AMD only (e.g. BCLConvert); "
+                     "arm64 is AWS Graviton, GCP Axion and Ampere",
+            )
+
             with gr.Accordion("GPU and metadata (optional)", open=False):
                 gpu_required = gr.Checkbox(value=False, label="GPU required")
                 gpu_vram = gr.Slider(0, 80, value=0, step=4, label="Min GPU VRAM (GB)")
@@ -354,7 +376,7 @@ with gr.Blocks(title="cloudfit demo", theme=gr.themes.Soft()) as demo:
             )
 
     inputs = [vcpu, ram_gb, archetype, optimize_for, headroom, headroom_mode, region, providers,
-              gpu_required, gpu_vram, workload, tool, top_k, pricing_mode]
+              gpu_required, gpu_vram, workload, tool, top_k, pricing_mode, cpu_arch]
 
     submit.click(recommend, inputs=inputs, outputs=[summary_md, table])
     providers.change(update_regions, inputs=[providers, region], outputs=[region])
@@ -390,4 +412,4 @@ with gr.Blocks(title="cloudfit demo", theme=gr.themes.Soft()) as demo:
 
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(theme=gr.themes.Soft())

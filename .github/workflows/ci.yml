@@ -26,7 +26,8 @@ jobs:
       - name: Install dependencies
         run: |
           sdk=$(sed -n 's/^sdk_version: *//p' README.md)
-          pip install -r requirements.txt "gradio==$sdk" pytest mypy "ruff>=0.15,<0.16"
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt "gradio==$sdk" pytest pytest-cov mypy "ruff>=0.15,<0.16"
 
       - name: Lint with ruff
         run: ruff check app.py tests/
@@ -35,4 +36,30 @@ jobs:
         run: mypy --strict app.py
 
       - name: Run tests
-        run: pytest -v --tb=short
+        run: pytest -v --tb=short --cov=app --cov-report=term --cov-fail-under=80
+
+  # Known vulnerabilities in what the Space installs (requirements.txt plus the
+  # Space's Gradio version), resolved in isolation on the Space's Python.
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      # Ignored: three Pillow advisories fixed only in Pillow 13, which no Gradio
+      # release allows yet (Gradio 6 requires pillow<13). This app takes no image
+      # input, so the image-decoding flaws are not reachable through it. Remove the
+      # ignores once Gradio allows Pillow 13; Dependabot will propose that update.
+      - name: Audit runtime dependencies
+        run: |
+          python -m pip install --upgrade pip pip-audit
+          sdk=$(sed -n 's/^sdk_version: *//p' README.md)
+          { cat requirements.txt; echo "gradio==$sdk"; } > /tmp/space-requirements.txt
+          pip-audit -r /tmp/space-requirements.txt \
+            --ignore-vuln CVE-2026-112398 \
+            --ignore-vuln CVE-2026-114501 \
+            --ignore-vuln GHSA-78g4-xqwv-q3g8

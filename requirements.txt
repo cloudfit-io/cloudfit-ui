@@ -1,2 +1,2 @@
-gradio>=5.0,<7.0
-cloudfit-core>=0.10.1
+gradio>=6.30,<7.0
+cloudfit-core>=0.11.2

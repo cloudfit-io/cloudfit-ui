@@ -4,7 +4,8 @@ emoji: 🖥️
 colorFrom: blue
 colorTo: green
 sdk: gradio
-sdk_version: 5.49.1
+sdk_version: 6.30.0
+python_version: "3.12"
 app_file: app.py
 pinned: false
 license: apache-2.0
@@ -52,7 +53,7 @@ pytest                 # smoke tests in tests/
 ruff check app.py tests/ && mypy --strict app.py
 ```
 
-CI runs the same checks on every pull request, against the Gradio version the Space runs (`sdk_version` in this README's front matter, currently 5.49.1). `requirements.txt` allows Gradio 5 or 6, so install `gradio==5.49.1` locally to match the live demo exactly.
+CI runs the same checks on every pull request, against the Gradio version the Space runs (`sdk_version` in this README's front matter, currently 6.30.0). `requirements.txt` allows Gradio 6.30 or newer within 6, so install `gradio==6.30.0` locally to match the live demo exactly.
 
 ## Ecosystem
 

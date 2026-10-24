@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_No unreleased changes._
+### Added
+- A CPU architecture selector (any, x86_64, arm64), using cloudfit-core 0.11's hard floor, so x86-only tools are never shown Arm instances. The top pick's summary names its architecture.
+- Data-integrity tests for both bundled snapshots, run on every PR including the weekly refresh PRs.
+
+### Changed
+- **Security:** the Space moves from Gradio 5.49.1 to 6.30.0 on Python 3.12 (`sdk_version`, `python_version`). A dependency audit of the old setup found 94 known vulnerabilities (in Gradio, Pillow, and Starlette, which Gradio 5 pins to old majors); Gradio 6 resolves all but three Pillow advisories that need Pillow 13, which no Gradio release allows yet. The app takes no image input, so those are not reachable through it.
+- Requires `gradio>=6.30` and `cloudfit-core>=0.11.2`. The theme moves to `launch()`, where Gradio 6 expects it.
+- CI enforces at least 80% test coverage and audits the Space's runtime dependencies; Dependabot also proposes monthly Python dependency updates.
 
 ## [0.3.1] - 2026-10-23
 

@@ -66,6 +66,21 @@ def test_region_from_another_cloud_explains_itself() -> None:
     assert "us-east1" in summary
 
 
+def test_cpu_arch_floor_excludes_arm() -> None:
+    _, any_rows = _recommend(providers=["aws"], archetype="cpu", optimize_for="cost", top_k=10)
+    _, x86_rows = _recommend(providers=["aws"], archetype="cpu", optimize_for="cost", top_k=10,
+                             cpu_arch="x86_64")
+    assert any(app.cpu_arch_for(r[0]) == app.CpuArch.arm64 for r in any_rows)
+    assert x86_rows
+    assert all(app.cpu_arch_for(r[0]) == app.CpuArch.x86_64 for r in x86_rows)
+
+
+def test_top_pick_summary_shows_architecture() -> None:
+    summary, rows = _recommend(providers=["aws"], cpu_arch="arm64")
+    assert rows
+    assert " · arm64**" in summary
+
+
 def test_burst_auto_shows_spot_price() -> None:
     summary, rows = _recommend(providers=["gcp"])   # AWS has no spot prices
     inst = _instance(rows[0])
