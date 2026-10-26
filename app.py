@@ -48,7 +48,7 @@ def update_regions(providers: list[str], selected: list[str]) -> Any:
         choices=choices, value=[r for r in selected or [] if r in choices], multiselect=True
     )
 
-SNAPSHOT_DATE = "2026-10-23"  # updated by provider-gcp's refresh-snapshot workflow
+SNAPSHOT_DATE = "2026-10-26"  # updated by provider-gcp's refresh-snapshot workflow
 AWS_SNAPSHOT_DATE = "2026-10-23"  # updated by provider-aws's refresh-snapshot workflow
 HOURS_PER_MONTH = 730  # AWS / GCP convention
 
