@@ -54807,6 +54807,20 @@
     "perf_factor": 0.95
   },
   {
+    "id": "p5e.48xlarge",
+    "provider": "aws",
+    "vcpu": 192,
+    "ram_gb": 2048.0,
+    "price_hr": 63.296,
+    "local_ssd_tb": 30.72,
+    "gpu_count": 8,
+    "gpu_vram_gb": 141,
+    "gpu_type": "nvidia-h200",
+    "region": "us-east-2",
+    "status": "active",
+    "perf_factor": 0.95
+  },
+  {
     "id": "p5en.48xlarge",
     "provider": "aws",
     "vcpu": 192,
