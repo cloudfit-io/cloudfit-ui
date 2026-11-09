@@ -47609,6 +47609,30 @@
     "perf_factor": 1.35
   },
   {
+    "id": "c8gn.metal-24xl",
+    "provider": "aws",
+    "vcpu": 96,
+    "ram_gb": 192.0,
+    "price_hr": 5.688,
+    "local_ssd_tb": 0.0,
+    "gpu_count": 0,
+    "region": "us-east-2",
+    "status": "active",
+    "perf_factor": 1.35
+  },
+  {
+    "id": "c8gn.metal-48xl",
+    "provider": "aws",
+    "vcpu": 192,
+    "ram_gb": 384.0,
+    "price_hr": 11.376,
+    "local_ssd_tb": 0.0,
+    "gpu_count": 0,
+    "region": "us-east-2",
+    "status": "active",
+    "perf_factor": 1.35
+  },
+  {
     "id": "c8gn.xlarge",
     "provider": "aws",
     "vcpu": 4,
@@ -54802,6 +54826,20 @@
     "gpu_count": 1,
     "gpu_vram_gb": 80,
     "gpu_type": "nvidia-h100",
+    "region": "us-east-2",
+    "status": "active",
+    "perf_factor": 0.95
+  },
+  {
+    "id": "p5e.48xlarge",
+    "provider": "aws",
+    "vcpu": 192,
+    "ram_gb": 2048.0,
+    "price_hr": 63.296,
+    "local_ssd_tb": 30.72,
+    "gpu_count": 8,
+    "gpu_vram_gb": 141,
+    "gpu_type": "nvidia-h200",
     "region": "us-east-2",
     "status": "active",
     "perf_factor": 0.95
@@ -63368,6 +63406,30 @@
     "perf_factor": 1.35
   },
   {
+    "id": "c8gn.metal-24xl",
+    "provider": "aws",
+    "vcpu": 96,
+    "ram_gb": 192.0,
+    "price_hr": 5.688,
+    "local_ssd_tb": 0.0,
+    "gpu_count": 0,
+    "region": "us-west-2",
+    "status": "active",
+    "perf_factor": 1.35
+  },
+  {
+    "id": "c8gn.metal-48xl",
+    "provider": "aws",
+    "vcpu": 192,
+    "ram_gb": 384.0,
+    "price_hr": 11.376,
+    "local_ssd_tb": 0.0,
+    "gpu_count": 0,
+    "region": "us-west-2",
+    "status": "active",
+    "perf_factor": 1.35
+  },
+  {
     "id": "c8gn.xlarge",
     "provider": "aws",
     "vcpu": 4,
@@ -71416,6 +71478,20 @@
     "gpu_count": 1,
     "gpu_vram_gb": 80,
     "gpu_type": "nvidia-h100",
+    "region": "us-west-2",
+    "status": "active",
+    "perf_factor": 0.95
+  },
+  {
+    "id": "p5e.48xlarge",
+    "provider": "aws",
+    "vcpu": 192,
+    "ram_gb": 2048.0,
+    "price_hr": 63.296,
+    "local_ssd_tb": 30.72,
+    "gpu_count": 8,
+    "gpu_vram_gb": 141,
+    "gpu_type": "nvidia-h200",
     "region": "us-west-2",
     "status": "active",
     "perf_factor": 0.95
