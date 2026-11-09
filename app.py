@@ -49,7 +49,7 @@ def update_regions(providers: list[str], selected: list[str]) -> Any:
     )
 
 SNAPSHOT_DATE = "2026-10-23"  # updated by provider-gcp's refresh-snapshot workflow
-AWS_SNAPSHOT_DATE = "2026-10-23"  # updated by provider-aws's refresh-snapshot workflow
+AWS_SNAPSHOT_DATE = "2026-11-09"  # updated by provider-aws's refresh-snapshot workflow
 HOURS_PER_MONTH = 730  # AWS / GCP convention
 
 ARCHETYPE_HINT = (
